@@ -1,1 +1,37 @@
+Sound:
+
 Sound is just vibrations in the air that, to put it very simply, bend the tiny hairs in our ears to create electrical impulses to our brain, which is percieved as sound. 
+Vibrations can be modeled as sine waves representing functions of pressure in the air.
+
+And like our ears can convert the physical movement (pressure change) of the sound wave to an electrical impulse, microphones can do the same. 
+Speakers do the opposite, that is convert an electrical signal back into pressure changes in the air. 
+
+So, you can represent a sound as a list of pressure changes, which correspond to a particular pitch!!!
+
+Audio Representation:
+
+ADC (Analog to Digital Converter): turns voltage/current into discrete numbers.
+DAC: turns numbers back to an analog voltage/current.
+Sampling: the process of reducing a continuous-time signal (e.g., analog audio) to a discrete-time signal (e.g., digital audio).
+
+So, given a continuous function, y(T), we can sample it to create a discrete signal y[n] where T is sampling interval (in seconds) and n is sample number 
+This is also how you represent pitch, as we sample y(t) every t = nT seconds where frequency is: Fs = 1/T Hertz!!
+
+Humans can hear up to about 20k Hertz, so sample time should be 44,100 times per second (2x maximum frequency to preserve data)
+Precision/quantization: 16bits per value (~65k discrete values) is enough.
+"44k/16" is CD-quality audio
+
+Undersampling causes permanent data loss, lower audio fidelity, and aliasing, a form of harsh, non-harmonic 
+distortion where high frequencies fold back into the audible range. 
+
+Audio in Python:
+
+Audio output expects float32 buffers (not int16) in the IMS setup; the important parameters are: 
+sample rate, frames per buffer, channels, device
+
+Frames-per-buffer tradeoff:
+smaller buffer → lower latency but higher underrun risk
+larger buffer → higher latency but more stable
+
+So, blah blah blah ill fill this in later let's get started!!!!
+
