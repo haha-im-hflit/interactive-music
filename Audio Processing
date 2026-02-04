@@ -15,9 +15,6 @@ def backwards(sound):
     Returns:
         A new mono sound dictionary with the samples in reversed order
     """
-    # check using -k and -v that we just learned
-    # -k lets u search certain words to run just those tests,
-    # -v returns the names of tests more verbosely (v for verbose)
 
     return {
         "rate": sound["rate"],
@@ -133,6 +130,7 @@ def pan(sound):
 
 def remove_vocals(sound):
     """
+    strip vocals for clarity, assert channel lengths match
     """
     if "left" not in sound or "right" not in sound:
         raise ValueError
@@ -144,9 +142,6 @@ def remove_vocals(sound):
     samples = [left[i] - right[i] for i in range(len(left))]
     return {"rate": rate, "samples": samples}
 
-# below are helper functions for converting back-and-forth between WAV files
-# and our internal dictionary representation for sounds
-#try zip function from removal
 
 
 def load_wav(filename, stereo=False):
