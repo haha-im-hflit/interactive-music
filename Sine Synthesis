@@ -10,15 +10,17 @@ So, you can represent a sound as a list of pressure changes, which correspond to
 
 Audio Representation:
 
-ADC (Analog to Digital Converter): turns voltage/current into discrete numbers.
-DAC: turns numbers back to an analog voltage/current.
+ADC (Analog to Digital Converter): turns voltage/current into discrete set of numbers -> this is a microphone.
+DAC: turns numbers back to an analog voltage/current -> this is a speaker.
 Sampling: the process of reducing a continuous-time signal (e.g., analog audio) to a discrete-time signal (e.g., digital audio).
+We can work the intermediary, our computer, which stores the numbers to play with sound 
 
 So, given a continuous function, y(T), we can sample it to create a discrete signal y[n] where T is sampling interval (in seconds) and n is sample number 
 This is also how you represent pitch, as we sample y(t) every t = nT seconds where frequency is: Fs = 1/T Hertz!!
 
+You need to pick a Nyquest rate that tells you the sampling frequency.
 Humans can hear up to about 20k Hertz, so sample time should be 44,100 times per second (2x maximum frequency to preserve data)
-Precision/quantization: 16bits per value (~65k discrete values) is enough.
+Precision/quantization: 16bits per value (~65k discrete values) is enough 
 "44k/16" is CD-quality audio
 
 Undersampling causes permanent data loss, lower audio fidelity, and aliasing, a form of harsh, non-harmonic 
