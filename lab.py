@@ -1,15 +1,7 @@
-"""
-6.101 Lab:
-Audio Processing
-"""
-
 import os
 import wave
 import struct
-# import typing  # optional import
-# import pprint  # optional import
 
-# No additional imports allowed!
 
 
 def backwards(sound):
@@ -234,56 +226,4 @@ def write_wav(sound, filename):
 
 
 if __name__ == "__main__":
-    # code in this block will only be run when you explicitly run your script,
-    # and not when the tests are being run.  this is a good place to put your
-    # code for generating and saving sounds, or any other code you write for
-    # testing, etc.
-
-    # here is an example of loading a file (note that this is specified as
-    # sounds/hello.wav, rather than just as hello.wav, to account for the
-    # sound files being in a different directory than this file)
-    hello = load_wav("sounds/hello.wav")
-
-    write_wav(backwards(hello), "hello_reversed.wav")
-
-    #5.1
-    # Load original mystery sound finds from file
-    mystery = load_wav("sounds/mystery.wav")
-
-    # Reverse it using backwards function of mystery
-    # (as explained in lab reverses pressure values to play sounds backwards)
-    reversed_mystery = backwards(mystery)
-
-    # Save reversed sound to  new file (test in terminal ls sounds)
-    write_wav(reversed_mystery, "sounds/mystery_reversed.wav")
-
-
-    #5.2
-    synth = load_wav("sounds/synth.wav")
-    water = load_wav("sounds/water.wav")
-
-    p = 0.2
-    mix_sound_sywa = mix(synth, water, p)
-    if mix_sound_sywa is not None:
-        write_wav(mix_sound_sywa, "sounds/mix_sound_sywa.wav")
-        print("Saved/wrote sounds/mix_sound_sywa.wav")
-    else:
-        print("Mix failed (rate mismatch or malformed inputs).")
-
-    #5.3
-    chord = load_wav("sounds/chord.wav")
-    chord_echo = echo(chord, num_echoes = 5, delay = 0.3, scale = 0.6)
-    write_wav(chord_echo, "sounds/chord_echo.wav")
-    print("Saved/wrote sounds/chord_echo.wav")
-
-    #6.1
-    car = load_wav("sounds/car.wav", stereo=True)
-    car_pan = pan(car)
-    write_wav(car_pan, "sounds/car_pan.wav")
-    print("Saved/wrote sound/car_pan/wav")
-
-    #6.2
-    lookout_mountain = load_wav("sounds/lookout_mountain.wav", stereo=True)  # must load stereo
-    lookout_mountain_no_voc = remove_vocals(lookout_mountain)
-    write_wav(lookout_mountain_no_voc, "sounds/lookout_mountain_novocals.wav")
-    print("Saved: sounds/lookout_mountain_novocals.wav")
+    
