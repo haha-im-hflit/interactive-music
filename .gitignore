@@ -5,3 +5,6 @@
 # Python cache
 __pycache__/
 *.pyc
+
+# Course library downloaded locally for lab1 runtime
+projects/01-sine-synthesis/main/imslib/
