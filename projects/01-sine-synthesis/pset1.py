@@ -244,7 +244,17 @@ class Mixer(object):
 class MultiWaveNoteGenerator(object):
     """Generate one note by summing a supplied harmonic recipe."""
 
-    def __init__(self, pitch, gain, wave_weights=None, harmonic_profile=None, sample_rate=44100, num_harmonics=10):
+    def __init__(
+        self,
+        pitch,
+        gain,
+        wave_weights=None,
+        harmonic_profile=None,
+        sample_rate=44100,
+        num_harmonics=10,
+        vibrato_rate_hz=0.0,
+        vibrato_depth_semitones=0.0,
+    ):
         super(MultiWaveNoteGenerator, self).__init__()
         self.pitch = float(pitch)
         self.gain = float(gain)
@@ -252,6 +262,9 @@ class MultiWaveNoteGenerator(object):
         self.num_harmonics = int(num_harmonics)
         self.phase = 0.0
         self.is_on = True
+        self.frame = 0
+        self.vibrato_rate_hz = float(max(vibrato_rate_hz, 0.0))
+        self.vibrato_depth_semitones = float(max(vibrato_depth_semitones, 0.0))
 
         self.freq = midi_to_hz(self.pitch)
         self.phase_inc = (2.0 * np.pi * self.freq) / self.sample_rate
@@ -278,13 +291,24 @@ class MultiWaveNoteGenerator(object):
         if not self.is_on:
             return (np.zeros(num_frames, dtype=np.float32), False)
 
-        phases = self.phase + self.phase_inc * np.arange(num_frames, dtype=np.float64)
+        if self.vibrato_rate_hz > 0.0 and self.vibrato_depth_semitones > 0.0:
+            # Frequency-domain vibrato: modulate pitch in semitones over time.
+            frames = np.arange(self.frame, self.frame + num_frames, dtype=np.float64)
+            vib = np.sin((2.0 * np.pi * self.vibrato_rate_hz * frames) / self.sample_rate)
+            inst_freq = self.freq * (2.0 ** ((self.vibrato_depth_semitones * vib) / 12.0))
+            phase_incs = (2.0 * np.pi * inst_freq) / self.sample_rate
+            phases = self.phase + np.cumsum(phase_incs) - phase_incs[0]
+            self.phase = float((phases[-1] + phase_incs[-1]) % (2.0 * np.pi))
+            self.frame += num_frames
+        else:
+            phases = self.phase + self.phase_inc * np.arange(num_frames, dtype=np.float64)
+            self.phase = float((self.phase + self.phase_inc * num_frames) % (2.0 * np.pi))
+
         output = np.zeros(num_frames, dtype=np.float64)
         for k, amp in enumerate(self.harmonics, start=1):
             if amp != 0.0:
                 output += amp * np.sin(k * phases)
         output = (self.gain * output).astype(np.float32)
-        self.phase = float((self.phase + self.phase_inc * num_frames) % (2.0 * np.pi))
         return (output, True)
 
 
@@ -438,8 +462,9 @@ class MainWidget2(BaseWidget):
     Creative instrument: keyboard performance with timbre presets.
 
     Research idea:
-    - Model woodwind-oriented families (flute, oboe, clarinet, tenor sax,
-      bassoon) using simple DSP parameters rather than exact physics.
+    - Model woodwind-oriented families (oboe, clarinet, tenor sax, bassoon)
+      plus a generic baseline using simple DSP parameters rather than exact
+      physics.
     - Map each family to spectral and temporal descriptors:
       (1) harmonic balance, (2) envelope shape, (3) brightness filtering.
 
@@ -458,6 +483,9 @@ class MainWidget2(BaseWidget):
     - Performance UX:
       Note keys stay fixed while meta keys switch timbre presets, so the same
       fingering yields different instrumental colors in real time.
+    - Small "cheat" for recognizability:
+      flute voices are transposed up 1 octave and bassoon voices are transposed
+      down 1 octave so each preset sits closer to its typical playing register.
     """
     def __init__(self):
         super(MainWidget2, self).__init__()
@@ -475,10 +503,23 @@ class MainWidget2(BaseWidget):
         self.pitches = [60, 62, 64, 65, 67, 69, 71, 72]
         self.key_to_pitch = dict(zip(self.note_keys, self.pitches))
 
-        self.preset_order = ["flute", "oboe", "clarinet", "tenor_sax", "bassoon"]
+        self.preset_order = ["generic", "oboe", "clarinet", "tenor_sax", "bassoon", "flute"]
         self.preset_idx = 0
         self.preset_name = self.preset_order[self.preset_idx]
         self.presets = {
+            "generic": {
+                # Baseline from parts 1-4 style: sine-like source + simple envelope.
+                "harmonics": harmonic_amplitudes("sine", 12),
+                "attack": 0.01,
+                "decay": 1.2,
+                "n1": 1.0,
+                "n2": 1.0,
+                "alpha": 1.0,  # alpha=1 behaves like passthrough (no LP darkening)
+                "gain": 0.26,
+                "pitch_offset": 0,
+                "vibrato_rate_hz": 0.0,
+                "vibrato_depth_semitones": 0.0,
+            },
             "flute": {
                 "harmonics": instrument_harmonics("flute", 12),
                 "attack": 0.06,
@@ -487,15 +528,21 @@ class MainWidget2(BaseWidget):
                 "n2": 1.1,
                 "alpha": 0.11,
                 "gain": 0.34,
+                "pitch_offset": 12,
+                "vibrato_rate_hz": 5.0,
+                "vibrato_depth_semitones": 0.08,
             },
             "oboe": {
                 "harmonics": instrument_harmonics("oboe", 12),
-                "attack": 0.03,
-                "decay": 1.5,
-                "n1": 1.1,
-                "n2": 0.9,
-                "alpha": 0.31,
-                "gain": 0.26,
+                "attack": 0.018,
+                "decay": 1.45,
+                "n1": 1.0,
+                "n2": 0.88,
+                "alpha": 0.46,  # brighter/nasal than sax
+                "gain": 0.22,
+                "pitch_offset": 5,  # slight upward register bias
+                "vibrato_rate_hz": 5.8,
+                "vibrato_depth_semitones": 0.05,
             },
             "clarinet": {
                 "harmonics": instrument_harmonics("clarinet", 12),
@@ -505,15 +552,21 @@ class MainWidget2(BaseWidget):
                 "n2": 1.0,
                 "alpha": 0.18,
                 "gain": 0.24,
+                "pitch_offset": 0,
+                "vibrato_rate_hz": 0.0,
+                "vibrato_depth_semitones": 0.0,
             },
             "tenor_sax": {
                 "harmonics": instrument_harmonics("tenor_sax", 12),
-                "attack": 0.015,
-                "decay": 1.3,
-                "n1": 1.0,
-                "n2": 0.95,
-                "alpha": 0.34,
-                "gain": 0.24,
+                "attack": 0.042,
+                "decay": 1.85,
+                "n1": 1.15,
+                "n2": 1.05,
+                "alpha": 0.24,  # warmer than oboe
+                "gain": 0.27,
+                "pitch_offset": -2,  # lower register center
+                "vibrato_rate_hz": 5.2,
+                "vibrato_depth_semitones": 0.22,
             },
             "bassoon": {
                 "harmonics": instrument_harmonics("bassoon", 12),
@@ -523,6 +576,9 @@ class MainWidget2(BaseWidget):
                 "n2": 1.2,
                 "alpha": 0.14,
                 "gain": 0.28,
+                "pitch_offset": -12,
+                "vibrato_rate_hz": 0.0,
+                "vibrato_depth_semitones": 0.0,
             },
         }
 
@@ -541,12 +597,15 @@ class MainWidget2(BaseWidget):
 
     def _make_voice(self, pitch, sample_rate):
         cfg = self.presets[self.preset_name]
+        pitch = float(pitch) + float(cfg.get("pitch_offset", 0.0))
         note = MultiWaveNoteGenerator(
             pitch=pitch,
             gain=cfg["gain"],
             harmonic_profile=cfg["harmonics"],
             sample_rate=sample_rate,
             num_harmonics=12,
+            vibrato_rate_hz=cfg.get("vibrato_rate_hz", 0.0),
+            vibrato_depth_semitones=cfg.get("vibrato_depth_semitones", 0.0),
         )
         env = Envelope(
             note,
@@ -568,8 +627,8 @@ class MainWidget2(BaseWidget):
             f"mix gain: {self.mixer.gain:.2f} | active voices: {self.mixer.get_num_generators()}\n"
             "note keys: a s d f g h j k\n"
             "switch timbre: shift(tenor sax), tab(flute), capslock(clarinet),\n"
-            "               backspace(bassoon), enter(oboe)\n"
-            "fallback switches: 1=flute, 2=oboe, 3=clarinet, 4=tenor sax, 5=bassoon, c=cycle\n"
+            "               backspace(bassoon), enter(oboe), 0(generic)\n"
+            "fallback switches: 0=generic, 1=flute, 2=oboe, 3=clarinet, 4=tenor sax, 5=bassoon, c=cycle\n"
             "controls: up/down mix gain, x note_off latest, z record toggle\n"
         )
 
@@ -602,6 +661,9 @@ class MainWidget2(BaseWidget):
             return
         if key in ("enter", "numpadenter"):
             self._set_preset("oboe")
+            return
+        if key == "0":
+            self._set_preset("generic")
             return
 
         # Reliable fallback switches (if meta keys vary by platform).
