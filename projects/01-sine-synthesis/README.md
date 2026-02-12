@@ -26,6 +26,15 @@ descriptions of woodwinds:
 - Tenor sax: broad, rich harmonic spectrum with moderate brightness.
 - Bassoon: darker spectrum with stronger low-mid emphasis.
 
+I further separated oboe and tenor sax by using different register bias,
+filter brightness, envelope shape, and vibrato depth:
+- Oboe: brighter and more nasal, with lighter vibrato and slightly higher range.
+- Tenor sax: warmer, fuller sustain, and deeper vibrato in a lower range.
+
+Note: I had to cheat a little for recognizability by shifting flute up an
+octave and bassoon down an octave, so those timbres sit in their more typical
+register ranges.
+
 ## Instructions
 
 Run the creative widget:
@@ -44,8 +53,10 @@ Timbre switching:
 - `caps lock`: clarinet-like timbre
 - `backspace`: bassoon-like timbre
 - `enter`: oboe-like timbre
+- `0`: generic parts 1-4 style baseline timbre
 
 Fallback timbre switches (more reliable across platforms):
+- `0`: generic
 - `1`: flute
 - `2`: oboe
 - `3`: clarinet
@@ -54,6 +65,7 @@ Fallback timbre switches (more reliable across platforms):
 - `c`: cycle through presets
 
 Preset model details:
+- Generic: parts 1-4 style sine baseline with simple envelope and no extra coloring.
 - Flute-like: fundamental-dominant spectrum, soft attack, long decay, dark filter.
 - Oboe-like: stronger upper partials, reed-forward brightness, medium attack/decay.
 - Clarinet-like: odd-harmonic dominant spectrum, warm filter, stable envelope.
